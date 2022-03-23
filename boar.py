@@ -7,3 +7,6 @@
 import argparse  # module for parsing arguments passed from the command line
 
 
+def boar():
+    # create partser to parse arguments passed from the command line
+    parser = argparse.ArgumentParser(description="Add, edit and view a list of short references.")
