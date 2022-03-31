@@ -10,44 +10,28 @@ import json
 import time
 
 
-def create_data_dir(local_path_normal, local_path_config):
+def create_data_dir(dotfile_path, dot_config_path, home):
     """Create the directory for storing the application's files"""
     
     # prompt to create the directory
-    for i in range(5):
-        do_setup = input("It seems no data directory has been set up yet. Proceed? [Y/n] ")
-        if do_setup.lower() in ["y", "yes", ""]:
-            break
-        elif do_setup.lower() in ["n", "no"]:
-            exit()
-        if i != 4:
-            time.sleep(0.5)
-            continue
-        exit("Unable to understand.")
+    prompt("It seems no data directory has been set up yet. Proceed?")
     
     # prompt about the location to create the directory in, then create it
-    for i in range(5):
-        dir_where = input(f"\nWhere to create the directory? \n1: {local_path_normal}  (default) \n2: {local_path_config} \nQ to abort \nSelect location [1-2] (default 1) ")
-        if dir_where in ["1", ""]:
-            os.mkdir(local_path_normal)
-            print("Created directory at", local_path_normal)
-            break
-        elif dir_where in ["2"]:
-            try:
-                os.mkdir(local_path_config)
-                print("Created directory at", local_path_config)
-                break
-            except FileNotFoundError:
-                print(f"The directory '{os.path.expanduser('~')}/.config/' was not found.")
-        elif dir_where.lower() in ["q", "quit", "a", "abort", "n", "no"]:
+    where = prompt(f"\nWhere to create the directory? \n1: {dotfile_path} \n2: {dot_config_path} \nQ to abort \nSelect location",
+                   default="1", positive=False, custom=[1, 2])
+    if where == "1":
+        os.mkdir(dotfile_path)
+        print("Created directory at", dotfile_path)
+    elif where == "2":
+        try:
+            os.mkdir(dot_config_path)
+            print("Created directory at", dot_config_path)
+        except FileNotFoundError:
+            print(f"The directory '{home}/.config/' was not found.")
             exit()
-        if i != 4:
-            time.sleep(0.5)
-            continue
-        exit("Unable to understand.")
 
 
-def create_defaults(path_loc):
+def create_defaults(path_loc, create_book=True, create_conf=True, create_history_dir=True):
     """Create the contents to the data folder"""
     
     # the main data structure for keeping the references
@@ -76,15 +60,84 @@ def create_defaults(path_loc):
         "disable colors": False
     }
 
-    # create the file to store the book data in with the template category
-    with open(path_loc + "book", "w") as file:
-        file.write(json.dumps(book))
-    # create the config file
-    with open(path_loc + "conf", "w") as file:
-        file.write(json.dumps(conf))
+    # create the file to store the book data in with the template category and the config file
+    with open(path_loc + "book", "w") as book_file, open(path_loc + "conf", "w") as conf_file:
+        if create_book:
+            json.dump(book, book_file)
+        if create_conf:
+            json.dump(conf, conf_file)
     # create the directory to keep the last n copies of the book in for ability to undo actions
-    os.mkdir(path_loc + "history")
+    if create_history_dir:
+        os.mkdir(path_loc + "history")
         
+
+def prompt(message, default="y", positive=True, negative=True, custom=False, add_expected=True, tries=5, exit_on_false=True, invalid_as_false=False):
+    """
+    Prompt the user about a choice (yes/no by default)
+    message: [str] the message to be displayed at the prompt, e.g. "Proceed with file creation?" (add \n to message for prompt to appear on a new line)
+    default: [str] the answer that an empty string (i.e. just pressing enter) is interpreted as ("y" or "n" for default bool, custom string or None otherwise)
+    positive: [bool / list] if prompt expects a boolean answer, leave True for default values interpreted as positive ("y" and "yes", case insensitive),
+        a list or tuple object for a custom set of answers, False for no positive boolean comparison
+    negative: [bool / list] like positive, except for negative boolean (default negatives are "n" and "no", "q" and "quit")
+    custom: [False / list] if input matches any of the values in the list, it will be returned, instead of waiting for a boolean response
+    add_expected: [bool / str] add expected input to end of message. String for custom addition
+    tries: [int] number of times the question prompt can appear (reappearing in case of invalid answer, 1 means an invalid answer causes the application to quit immediately)
+    exit_on_false: [bool] call exit() on negative answer, otherwise return False
+    invalid_as_false: [bool] in no valid answer given in set tries, interpret it as False
+    """
+    
+    # add expected input to end of message
+    if positive and negative and add_expected is True:
+        # boolean answer
+        if default == "y":
+            # default positive
+            message += " [Y/n] "
+        elif default == "n":
+            # default negative
+            message += " [y/N] "
+        elif not default:
+            # no default
+            message += " [y/n] "
+    elif type(add_expected) != bool:
+        message += add_expected
+    elif custom and add_expected:
+        message += f" {custom} "
+        if default:
+            message += f"(default {default}) "
+    
+    for i in range(tries):
+        # ask for input
+        answ = input(message)
+        # convert it to default if applicable
+        if answ == "" and default:
+            answ = default
+        answ = answ.lower()
+        
+        # convert positive and negative to defaults if applicable
+        if positive is True:
+            positive = ["y", "yes"]
+        if negative is True:
+            negative = ["n", "no", "q", "quit"]
+        
+        # compare answer for a match
+        if custom and answ in [str(x).lower() for x in custom]:
+            return answ
+        if positive and answ in [str(x).lower() for x in positive]:
+            return True
+        if negative and answ in [str(x).lower() for x in negative]:
+            if exit_on_false:
+                exit()
+            return False
+        
+        time.sleep(0.5)
+    
+    # if no valid answer has been given so far
+    if invalid_as_false and not exit_on_false:
+        return False
+    print("Unable to understand")
+    exit()
+        
+
 
 def main():
     
@@ -102,15 +155,30 @@ def main():
         exit("Invalid argument.")
     
     # path to data directory
-    path = os.path.expanduser("~") + "/.boar/"
-    path2 = os.path.expanduser("~") + "/.config/boar/"
+    home = os.path.expanduser("~")
+    path = home + "/.boar/"
+    path2 = home + "/.config/boar/"
     
     # check if data directory exists and handle appropriately if it doesn't
-    if not (os.path.exists(path) or os.path.exists(path2)):
-        create_data_dir(path, path2)
+    if not ( os.path.exists(path) or os.path.exists(path2) ):
+        create_data_dir(path, path2, home)
         path = path if os.path.exists(path) else path2
         create_defaults(path)
     path = path if os.path.exists(path) else path2
+    
+    # check if required files exist in directory
+    #TODO
+    
+    # load data and config from file
+    with open(path + "book") as book_file, open(path + "conf") as conf_file:
+        try:
+            book = json.load(book_file)
+        except json.decoder.JSONDecodeError:
+            print("Error decoding book file")
+            book = None
+        conf = json.load(conf_file)
+    #print(book, conf, sep="\n")
+    
 
 
 if __name__ == "__main__":
