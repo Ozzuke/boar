@@ -17,7 +17,7 @@ def create_data_dir(dotfile_path, dot_config_path, home):
     prompt("It seems no data directory has been set up yet. Proceed?")
     
     # prompt about the location to create the directory in, then create it
-    where = prompt(f"\nWhere to create the directory? \n1: {dotfile_path} \n2: {dot_config_path} \nQ to abort \nSelect location",
+    where = prompt(f"\nWhere to create data directory? \n1: {dotfile_path} \n2: {dot_config_path} \nQ to abort \nSelect location",
                    default="1", positive=False, custom=[1, 2])
     if where == "1":
         os.mkdir(dotfile_path)
@@ -31,7 +31,7 @@ def create_data_dir(dotfile_path, dot_config_path, home):
             exit()
 
 
-def create_defaults(path_loc, create_book=True, create_conf=True, create_history_dir=True):
+def create_defaults(path_loc, create_book=False, create_conf=False, create_history_dir=False):
     """Create the contents to the data folder"""
     
     # the main data structure for keeping the references
@@ -60,11 +60,13 @@ def create_defaults(path_loc, create_book=True, create_conf=True, create_history
         "disable colors": False
     }
 
-    # create the file to store the book data in with the template category and the config file
-    with open(path_loc + "book", "w") as book_file, open(path_loc + "conf", "w") as conf_file:
-        if create_book:
+    # create the book file for storing the data in the book
+    if create_book:
+        with open(path_loc + "book", "w") as book_file:
             json.dump(book, book_file)
-        if create_conf:
+    # create the config file
+    if create_conf:
+        with open(path_loc + "conf", "w") as conf_file:
             json.dump(conf, conf_file)
     # create the directory to keep the last n copies of the book in for ability to undo actions
     if create_history_dir:
@@ -163,21 +165,41 @@ def main():
     if not ( os.path.exists(path) or os.path.exists(path2) ):
         create_data_dir(path, path2, home)
         path = path if os.path.exists(path) else path2
-        create_defaults(path)
+        create_defaults(path, create_book=True, create_conf=True, create_history_dir=True)
     path = path if os.path.exists(path) else path2
     
     # check if required files exist in directory
-    #TODO
+    if not os.path.exists(path + "book"):
+        if prompt("File 'book' missing in directory. Create it now?"):
+            create_defaults(path, create_book=True)
+    if not os.path.exists(path + "conf"):
+        if prompt("File 'conf' missing in directory. Create it now?"):
+            create_defaults(path, create_conf=True)
+    if not os.path.exists(path + "history"):
+        if prompt("Directory 'history' missing in directory. Create it now?"):
+            create_defaults(path, create_history_dir=True)
     
     # load data and config from file
     with open(path + "book") as book_file, open(path + "conf") as conf_file:
+        # try reading the book file
         try:
             book = json.load(book_file)
         except json.decoder.JSONDecodeError:
-            print("Error decoding book file")
-            book = None
-        conf = json.load(conf_file)
+            print("Error decoding file 'book'")
+            if prompt("Overwrite the file 'book' with defaults?"):
+                create_defaults(path, create_book=True)
+            book = json.load(book_file)
+        
+        # try reading the config file
+        try:
+            conf = json.load(conf_file)
+        except json.decoder.JSONDecodeError:
+            print("Error decoding config file 'conf'")
+            if prompt("Overwrite the file 'conf' with defaults?"):
+                create_defaults(path, create_conf=True)
+            conf = json.load(conf_file)
     #print(book, conf, sep="\n")
+    print("Looks good so far")
     
 
 
