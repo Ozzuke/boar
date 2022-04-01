@@ -57,7 +57,8 @@ def create_defaults(path_loc, create_book=False, create_conf=False, create_histo
     # configuration
     conf = {
         "history length": 5,
-        "disable colors": False
+        "disable colors": False,
+        "show_links": True
     }
 
     # create the book file for storing the data in the book
@@ -70,10 +71,11 @@ def create_defaults(path_loc, create_book=False, create_conf=False, create_histo
             json.dump(conf, conf_file)
     # create the directory to keep the last n copies of the book in for ability to undo actions
     if create_history_dir:
-        os.mkdir(path_loc + "history")
+        if not os.path.exists(path_loc + "history"):
+            os.mkdir(path_loc + "history")
         
 
-def prompt(message, default="y", positive=True, negative=True, custom=False, add_expected=True, tries=5, exit_on_false=True, invalid_as_false=False):
+def prompt(message, default="y", positive=True, negative=True, custom=False, add_expected=True, tries=3, exit_on_false=True, invalid_as_false=False):
     """
     Prompt the user about a choice (yes/no by default)
     message: [str] the message to be displayed at the prompt, e.g. "Proceed with file creation?" (add \n to message for prompt to appear on a new line)
@@ -140,6 +142,69 @@ def prompt(message, default="y", positive=True, negative=True, custom=False, add
     exit()
         
 
+def ls(args, book, conf):
+    """Show the contents of the book or a specific category
+    format:
+    ID Name (short) – description
+    2   Template Category  (temp)
+    2.1  - Template entry [L] : a good description about the entry
+             link: https://example.com
+    2.2  - A second entry :"""
+    
+    # if book is empty, say as much and exit
+    if not book:
+        print("No items to show.")
+        exit()
+    
+    # if asked for a non-existent category, say as much and exit
+    if args and args not in [x["short"] for x in book] + [str(x) for x in range(1, len(book) + 1)]:
+        print("Category doesn't exist.")
+        exit()
+    
+    # find the amount of characters the longest ID takes to display
+    longest_id = len(str(len(book))) + 1 + len(str(max([len(x["items"]) for x in book])))
+    
+    print("BOAR – Book Of All References")
+    for id1, cat in enumerate(book, 1):
+        if not args or args in [str(id1), cat["short"]]:
+            # write the category ID
+            print(str(id1) + " " * (longest_id - len(str(id1))), end=" ")
+            # write the category name
+            print(cat["name"], end="  ")
+            # write the short version of the category name if present
+            if cat["short"]:
+                print(f"({cat['short']})")
+            else:
+                # add newline
+                print()
+            
+            # write out the items in the category
+            for id2, item in enumerate(cat["items"], 1):
+                # write the item ID
+                print(str(id1) + "." + str(id2) + " " * (longest_id - len(str(id1)) - 1 - len(str(id2))), end="  - ")
+                # write the item name
+                print(item["name"], end=" ")
+                # indicate the presence of a link if exists
+                if item["link"]:
+                    print("[L]", end=" ")
+                # add ':' before description
+                print(":", end=" ")
+                # write the description if it exists
+                print(item["desc"] if item["desc"] else "...")
+                
+                # if link is present, write it in a new line
+                if item["link"] and conf["show_links"]:
+                    print(" " * (longest_id + 5), "link:", item["link"])
+        
+        # add newline between categories
+        if id1 != len(book) and not args:
+            print()
+            
+    
+def addcat(args, book, conf):
+    """Add a category to the book, returns the edited book"""
+    pass
+
 
 def main():
     
@@ -151,10 +216,13 @@ def main():
     # check if passed argument for action is a valid one and store it
     if not args:
         act = "ls"
-    elif args[0] in ["add", "addcat", "ls", "rm", "rmcat", "reset", "undo", "export"]:
+    elif args[0] in ["add", "addcat", "ls", "rm", "rmcat", "edit", "editcat", "reset", "undo", "export", "test"]:
         act = args.pop(0)
     else:
-        exit("Invalid argument.")
+        exit("Invalid operation.")
+    
+    # convert remaining arguments to a string
+    args = " ".join(args)
     
     # path to data directory
     home = os.path.expanduser("~")
@@ -198,9 +266,23 @@ def main():
             if prompt("Overwrite the file 'conf' with defaults?"):
                 create_defaults(path, create_conf=True)
             conf = json.load(conf_file)
-    #print(book, conf, sep="\n")
-    print("Looks good so far")
     
+    #print(book, conf, sep="\n")
+    if act == "test":
+        print("Looks good so far")
+        exit()
+    
+    # act according to chosen operation
+    elif act == "ls":
+        ls(args, book, conf)
+        exit()
+    elif act == "reset":
+        # restore defaults
+        if prompt("This will overwrite the book and the config. Proceed?", default="y"): #TODO: set deafult to no
+            create_defaults(path, True, True, True)
+        exit()
+    elif act == "addcat":
+        book_edited = addcat(args, book, conf)
 
 
 if __name__ == "__main__":
