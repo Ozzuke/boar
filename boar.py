@@ -8,6 +8,7 @@ import argparse  # module for parsing arguments passed from the command line
 import os
 import json
 import time
+import string
 
 
 def create_data_dir(dotfile_path, dot_config_path, home):
@@ -203,7 +204,47 @@ def ls(args, book, conf):
     
 def addcat(args, book, conf):
     """Add a category to the book, returns the edited book"""
-    pass
+    
+    # get the category name
+    if args:
+        cat_name = args
+    else:
+        cat_name = input("Category name (leave blank to abort): ")
+        if not cat_name:
+            exit()
+    if cat_name.lower() in [x["name"].lower() for x in book]:
+        print("Category with the same name already exists.")
+        exit()
+    
+    # get the short name for the category
+    while True:
+        short = input("Short name for category (leave blank to use first four letters): ")
+        # exit if needed
+        if short == "q":
+            exit()
+        # create short name from category name
+        if not short:
+            short = "".join([x for x in cat_name.lower() if x in string.ascii_lowercase + string.digits])[:4]
+            if short not in [x["short"] for x in book]:
+                break  # all good
+            short += str([x["short"] for x in book].count(short) + 1)
+            break
+        if not short.isalnum():
+            print("Short name must be composed of alphanumeric characters.")
+            continue
+        if short not in [x["short"] for x in book]:
+            break  # all good
+        print("A category with the same short name exists. Consider adding a number at the end.")
+    
+    # add created category to book
+    book.append({
+        "name": cat_name,
+        "short": short.lower(),
+        "items": []
+        })
+    
+    # return the modified book object
+    return book
 
 
 def main():
@@ -267,7 +308,6 @@ def main():
                 create_defaults(path, create_conf=True)
             conf = json.load(conf_file)
     
-    #print(book, conf, sep="\n")
     if act == "test":
         print("Looks good so far")
         exit()
