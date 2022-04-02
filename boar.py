@@ -59,7 +59,7 @@ def create_defaults(path_loc, create_book=False, create_conf=False, create_histo
     conf = {
         "history length": 5,
         "disable colors": False,
-        "show_links": True
+        "show links": True
     }
 
     # create the book file for storing the data in the book
@@ -196,7 +196,7 @@ def ls(args, book, conf):
                 print(item["desc"] if item["desc"] else "...")
                 
                 # if link is present, write it in a new line
-                if item["link"] and conf["show_links"]:
+                if item["link"] and conf["show links"]:
                     print(" " * (longest_id + 5), "link:", item["link"])
         
         # add newline between categories
@@ -262,7 +262,7 @@ def add(args, book, conf):
     if args:
         args = args.split(" ")
         cat_n = args.pop(0)
-        args = "-".join(args)
+        args = " ".join(args)
         
     else:
         cat_n = input("Category name (short) or ID to add to: ")
@@ -312,6 +312,68 @@ def add(args, book, conf):
     return mod_book
         
 
+def save_book(path, book_edited, book, conf):
+    """Save the edited book into the book file and the old one to history."""
+    
+    # save the old version to history
+    save_to_history(path, book, conf)
+    
+    # write the current version to the book file
+    with open(path + "book", "w") as file:
+        json.dump(book_edited, file)
+    
+
+
+def save_to_history(path, book, conf):
+    """Save the given book to a new entry in history (a tome) and overwrite old versions as specified in conf. tome1 is the latest tome, tome2 second oldest etc."""
+    
+    # increment the number of all tomes
+    all_files = os.listdir(path + "history")
+    for tome in sorted([x for x in all_files if x.startswith("tome")], reverse=True):
+        tome_num = int(tome[4:])
+        if tome_num < conf["history length"]:
+            os.rename(path + "history/" + tome, path + "history/tome" + str(tome_num + 1))
+    # add a new tome with number 1 to history
+    if conf["history length"]:
+        with open(path + "book") as book_file:
+            book = json.load(book_file)
+            with open(path + "history/tome1", "w") as file:
+                json.dump(book, file)
+
+
+def undo(path, times=1):
+    """Write a tome to book, decrement tome numbers appropriately."""
+    
+    if not times:
+        times = 1
+
+    # check that times is a number
+    if not str(times).isnumeric() or not int(times):
+        exit("The number of times to undo must be a positive integer.")
+    times = int(times)
+    
+    # write correct tome to book
+    try:
+        with open(path + "history/tome" + str(times)) as tome_file:
+            ancient_texts = json.load(tome_file)
+            with open(path + "book", "w") as book_file:
+                json.dump(ancient_texts, book_file)
+    except json.decoder.JSONDecodeError:
+        exit(f"The ancient texts in tome{times} seem untranslateable.")
+    except FileNotFoundError:
+        exit(f"The ancient tome called tome{times} seems to be lost somewhere. Try a smaller number.")
+    
+    # decrement tomes
+    all_files = os.listdir(path + "history")
+    for tome in sorted([x for x in all_files if x.startswith("tome")]):
+        tome_num = int(tome[4:])
+        if tome_num <= times:
+            # delete tomes that are too recent
+            os.remove(path + "history/tome" + str(tome_num))
+            continue
+        # decrement everything else
+        os.rename(path + "history/tome" + str(tome_num), path + "history/tome" + str(tome_num - times)) 
+
 
 def main():
     
@@ -354,6 +416,16 @@ def main():
         if prompt("Directory 'history' missing in directory. Create it now?"):
             create_defaults(path, create_history_dir=True)
     
+    # do operations that do not require loading data and config
+    if act == "undo":
+        undo(path, args)
+        exit()
+    elif act == "reset":
+        # restore defaults
+        if prompt("This will overwrite the book and the config. Proceed?", default="y"): #TODO: set deafult to no
+            create_defaults(path, True, True, True)
+        exit()
+    
     # load data and config from file
     with open(path + "book") as book_file, open(path + "conf") as conf_file:
         # try reading the book file
@@ -375,22 +447,19 @@ def main():
             conf = json.load(conf_file)
     
     if act == "test":
+        save_to_history(path, book, conf)
         exit("Looks good so far")
     
     # act according to chosen operation
     elif act == "ls":
         ls(args, book, conf)
         exit()
-    elif act == "reset":
-        # restore defaults
-        if prompt("This will overwrite the book and the config. Proceed?", default="y"): #TODO: set deafult to no
-            create_defaults(path, True, True, True)
-        exit()
     elif act == "addcat":
         book_edited = addcat(args, book, conf)
+        save_book(path, book_edited, book, conf)
     elif act == "add":
         book_edited = add(args, book, conf)
-    ls(None, book_edited, conf)
+        save_book(path, book_edited, book, conf)
 
 
 if __name__ == "__main__":
