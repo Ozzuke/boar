@@ -213,8 +213,7 @@ def addcat(args, book, conf):
         if not cat_name:
             exit()
     if cat_name.lower() in [x["name"].lower() for x in book]:
-        print("Category with the same name already exists.")
-        exit()
+        exit("Category with the same name already exists.")
     
     # get the short name for the category
     while True:
@@ -224,13 +223,16 @@ def addcat(args, book, conf):
             exit()
         # create short name from category name
         if not short:
-            short = "".join([x for x in cat_name.lower() if x in string.ascii_lowercase + string.digits])[:4]
+            short = "".join([x for x in cat_name.lower() if x.isalnum()])[:4]  # use only alphanumeric characters
+            if not short or short[0].isnumeric() or len(short) < 2:
+                print("Unable to generate a short name. Please enter one manually.")
+                continue
             if short not in [x["short"] for x in book]:
                 break  # all good
             short += str([x["short"] for x in book].count(short) + 1)
             break
-        if not short.isalnum():
-            print("Short name must be composed of alphanumeric characters.")
+        if not short.isalnum() or short[0].isnumeric() or not 2 <= len(short) <= 8:
+            print("Short name must be composed of alphanumeric characters, can not start with a number and be 2-8 characters long.")
             continue
         if short not in [x["short"] for x in book]:
             break  # all good
@@ -245,6 +247,64 @@ def addcat(args, book, conf):
     
     # return the modified book object
     return book
+
+
+def add(args, book, conf):
+    """Adds an object to a category, returns the modified book"""
+    
+    # get the category to add to
+    if args:
+        args = args.split(" ")
+        cat_n = args.pop(0)
+        args = "-".join(args)
+        
+    else:
+        cat_n = input("Category name (short) or ID to add to: ")
+        if not cat_n:
+            exit()
+    # check if category exists or if ID is valid
+    if cat_n not in [x["short"] for x in book] and not ( cat_n.isnumeric() and 0 < int(cat_n) <= len(book) ):
+        exit(f"Category with short name or ID of '{cat_n}' doesn't exist.")
+    
+    # get the name for the item
+    if args:
+        name = args
+    else:
+        name = input("Item name: ")
+    if not name:
+        exit("Name can't be blank.")
+    
+    mod_book = []
+    # generate new book with selected category added
+    for i, cat in enumerate(book, 1):
+        
+        # if not the selected category, add it to new book unchanged
+        if cat_n not in [str(i), cat["short"]]:
+            mod_book.append(cat)
+            continue
+        
+        # check if item of the same name does not happen to already be present
+        if name.lower() in [x["name"].lower() for x in cat["items"]]:
+            exit("Item of the same name already exists in category. You may want to modify it instead.")
+        
+        # ask for a description of the item
+        desc = input("Item description (or leave blank): ")
+        desc = desc if desc else None
+        
+        # ask for a link for the item
+        link = input("Item link (or leave blank): ")
+        link = link if link else None
+        
+        cat["items"].append({
+            "name": name,
+            "desc": desc,
+            "link": link
+            })
+        
+        mod_book.append(cat)
+    
+    return mod_book
+        
 
 
 def main():
@@ -309,8 +369,7 @@ def main():
             conf = json.load(conf_file)
     
     if act == "test":
-        print("Looks good so far")
-        exit()
+        exit("Looks good so far")
     
     # act according to chosen operation
     elif act == "ls":
@@ -323,6 +382,9 @@ def main():
         exit()
     elif act == "addcat":
         book_edited = addcat(args, book, conf)
+    elif act == "add":
+        book_edited = add(args, book, conf)
+    ls(None, book, conf)
 
 
 if __name__ == "__main__":
