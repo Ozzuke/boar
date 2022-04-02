@@ -152,6 +152,8 @@ def ls(args, book, conf):
              link: https://example.com
     2.2  - A second entry :"""
     
+    book = book.copy()
+    
     # if book is empty, say as much and exit
     if not book:
         print("No items to show.")
@@ -205,6 +207,8 @@ def ls(args, book, conf):
 def addcat(args, book, conf):
     """Add a category to the book, returns the edited book"""
     
+    book = book.copy()
+    
     # get the category name
     if args:
         cat_name = args
@@ -251,6 +255,8 @@ def addcat(args, book, conf):
 
 def add(args, book, conf):
     """Adds an object to a category, returns the modified book"""
+    
+    book = book.copy()
     
     # get the category to add to
     if args:
@@ -384,7 +390,7 @@ def main():
         book_edited = addcat(args, book, conf)
     elif act == "add":
         book_edited = add(args, book, conf)
-    ls(None, book, conf)
+    ls(None, book_edited, conf)
 
 
 if __name__ == "__main__":
