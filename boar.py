@@ -8,8 +8,18 @@ import argparse  # module for parsing arguments passed from the command line
 import os
 import json
 import time
-import string
 
+
+#TODO:
+# export to HTML
+# colors
+# normalize output and prompt messages
+# add help page
+# modifiable settings
+
+# unimportant additions:
+# completely useable with arguments, no prompts needed
+# normalize function descriptions
 
 def create_data_dir(dotfile_path, dot_config_path, home):
     """Create the directory for storing the application's files"""
@@ -59,7 +69,8 @@ def create_defaults(path_loc, create_book=False, create_conf=False, create_histo
     conf = {
         "history length": 5,
         "disable colors": False,
-        "show links": True
+        "show links": True,
+        "clear": "cl"
     }
 
     # create the book file for storing the data in the book
@@ -205,7 +216,7 @@ def ls(args, book, conf):
             
     
 def addcat(args, book, conf):
-    """Add a category to the book, returns the edited book"""
+    """Adds a category to the book, returns modified book"""
     
     book = book.copy()
     
@@ -233,7 +244,7 @@ def addcat(args, book, conf):
                 continue
             if short not in [x["short"] for x in book]:
                 break  # all good
-            short += str([x["short"] for x in book].count(short) + 1)
+            short += str([x["short"][:len(short)] for x in book].count(short) + 1)  # find number of items with same name
             break
         if not short.isalnum() or short[0].isnumeric() or not 2 <= len(short) <= 8:
             print("Short name must be composed of alphanumeric characters, can not start with a number and be 2-8 characters long.")
@@ -254,7 +265,7 @@ def addcat(args, book, conf):
 
 
 def add(args, book, conf):
-    """Adds an object to a category, returns the modified book"""
+    """Adds an entry to specified category, returns modified book"""
     
     book = book.copy()
     
@@ -312,6 +323,232 @@ def add(args, book, conf):
     return mod_book
         
 
+def rmcat(args, book, conf):
+    """Removes specified category, returns modified book"""
+
+    if args:
+        cat_n = args
+    else:
+        cat_n = input("Category to remove (short) or ID: ")
+    
+    if not cat_n:
+        exit("No category name provided.")
+    if cat_n not in [str(x) for x in range(1, len(book) + 1)] + [x["short"] for x in book]:
+        exit("Category doesn't exist.")
+    
+    mod_book = []
+    for i, cat in enumerate(book, 1):
+        
+        # if not the specified category, add it to the new book
+        if cat_n not in [str(i), cat["short"]]:
+            mod_book.append(cat)
+            continue
+        
+        print(f"Removed category '{cat['name']}'")
+        
+    return mod_book
+
+
+def rm(args, book, conf):
+    """Removes specified entry from specified category, returns modified book"""
+    
+    if args:
+        if "." in args:
+            args = args.split(".", 1)
+        else:
+            args = args.split(" ")
+        cat_n = args.pop(0)  # category name
+        item_n = " ".join(args)
+    else:
+        cat_n = input("Category to remove from (short) or ID: ")
+        item_n = ''
+    
+    #TODO: move category check to a function
+    if not cat_n:
+        exit("No category name provided.")
+    if cat_n not in [str(x) for x in range(1, len(book) + 1)] + [x["short"] for x in book]:
+        exit("Category doesn't exist.")
+    
+    mod_book = []
+    for i, cat in enumerate(book, 1):
+        
+        # if not the specified category, add it to the new book
+        if cat_n not in [str(i), cat["short"]]:
+            mod_book.append(cat)
+            continue
+        
+        if not item_n:
+            item_n = input("Item name or ID to remove: ")
+        
+        item_n = item_n.lower()
+        
+        # check if item exists in category
+        if item_n not in [str(x) for x in range(1, len(cat["items"]) + 1)] + [x["name"].lower() for x in cat["items"]]:
+            exit("Item doesn't exist in category.")
+        
+        mod_items = []
+        for j, item in enumerate(cat["items"], 1):
+            
+            # if not the specified item, add it to the new items list
+            if item_n not in [str(j), item["name"].lower()]:
+                mod_items.append(item)
+                continue
+            
+            print(f"Removed item '{item['name']}'")
+        
+        # add modified item list to category
+        cat["items"] = mod_items
+        mod_book.append(cat)
+    
+    return mod_book
+            
+
+
+def editcat(args, book, conf):
+    """Edits specified category, returns modified book"""
+    
+    if args:
+        cat_n = args
+    else:
+        cat_n = input("Category to edit (short) or ID: ")
+    
+    if not cat_n:
+        exit("No category name provided.")
+    if cat_n not in [str(x) for x in range(1, len(book) + 1)] + [x["short"] for x in book]:
+        exit("Category doesn't exist.")
+    
+    mod_book = []
+    for i, cat in enumerate(book, 1):
+        
+        # if not the specified category, add it to the new book
+        if cat_n not in [str(i), cat["short"]]:
+            mod_book.append(cat)
+            continue
+        
+        changed = []
+        
+        new_cat_n = input("New name for category (blank to leave unchanged): ")
+        if new_cat_n:
+            # change category name
+            
+            if new_cat_n.lower() in [x["name"].lower() for x in book]:
+                exit("Category with the same name already exists.")
+            
+            changed.append(f"{cat['name']} -> {new_cat_n}")
+            cat["name"] = new_cat_n
+        
+        new_short_n = input("New short name for category (blank to leave unchanged): ")
+        if new_short_n:
+            # change short name
+            
+            if not new_short_n.isalnum() or new_short_n[0].isnumeric() or not 2 <= len(new_short_n) <= 8:
+                print("Short name must be composed of alphanumeric characters, can not start with a number and be 2-8 characters long.")
+            elif new_short_n in [x["short"] for x in book]:
+                print("Category with same short name already exists.")
+            else:
+                changed.append(f"{cat['short']} -> {new_short_n}")
+                cat["short"] = new_short_n
+
+        mod_book.append(cat)
+        
+    if not changed:
+        print("No changes made")
+        exit()
+    print("Changes:\n" + "\n".join(changed))
+        
+    return mod_book
+
+
+def edit(args, book, conf):
+    """Edits specified entry from specified categoroy, returns modified book"""
+    
+    if args:
+        if "." in args:
+            args = args.split(".", 1)
+        else:
+            args = args.split(" ")
+        cat_n = args.pop(0)  # category name
+        item_n = " ".join(args)
+    else:
+        cat_n = input("Category of entry to edit (short) or ID: ")
+        item_n = ''
+    
+    #TODO: move category check to a function
+    if not cat_n:
+        exit("No category name provided.")
+    if cat_n not in [str(x) for x in range(1, len(book) + 1)] + [x["short"] for x in book]:
+        exit("Category doesn't exist.")
+    
+    mod_book = []
+    for i, cat in enumerate(book, 1):
+        
+        # if not the specified category, add it to the new book
+        if cat_n not in [str(i), cat["short"]]:
+            mod_book.append(cat)
+            continue
+        
+        if not item_n:
+            item_n = input("Item name or ID to edit: ")
+        
+        item_n = item_n.lower()
+        
+        # check if item exists in category
+        if item_n not in [str(x) for x in range(1, len(cat["items"]) + 1)] + [x["name"].lower() for x in cat["items"]]:
+            exit("Item doesn't exist in category.")
+        
+        mod_items = []
+        for j, item in enumerate(cat["items"], 1):
+            
+            # if not the specified item, add it to the new items list
+            if item_n not in [str(j), item["name"].lower()]:
+                mod_items.append(item)
+                continue
+            
+            changed = []
+            
+            # change item name
+            new_item_n = input("New name for item (blank to leave unchanged): ")
+            if new_item_n:
+                if new_item_n.lower() in [x["name"].lower() for x in cat["items"]]:
+                    exit("Category with the same name already exists.")
+                changed.append(f"{item['name']} -> {new_item_n}")
+                item["name"] = new_item_n
+            
+            # change item description
+            new_item_desc = input(f"New description for item (blank to leave unchanged, '{conf['clear']}' to clear): ")
+            first_part = item["desc"] if item["desc"] and len(item["desc"]) < 20 else item["desc"] if not item["desc"] else item["desc"][:20] + "..."
+            if new_item_desc.lower() == conf["clear"].lower():
+                changed.append(f"{first_part} -> None")
+                item["desc"] = None
+            elif new_item_desc:
+                sec_part = new_item_desc if len(new_item_desc) < 20 else new_item_desc[:20] + "..."
+                changed.append(f"{first_part} -> {sec_part}")
+                item["desc"] = new_item_desc
+            
+            new_item_link = input(f"New link for item (blank to leave unchanged, '{conf['clear']}' to clear): ")
+            first_part = item["link"] if item["link"] and len(item["link"]) < 20 else item["link"] if not item["link"] else item["link"][:20] + "..."
+            if new_item_link.lower() == conf["clear"].lower():
+                changed.append(f"{first_part} -> None")
+                item["link"] = None
+            elif new_item_link:
+                sec_part = new_item_link if len(new_item_link) < 20 else new_item_link[:20] + "..."
+                changed.append(f"{first_part} -> {sec_part}")
+                item["link"] = new_item_link
+            
+            mod_items.append(item)
+            
+        # add modified item list to category
+        cat["items"] = mod_items
+        mod_book.append(cat)
+    
+    if not changed:
+        print("No changes made")
+        exit()
+    print("Changes:\n" + "\n".join(changed))
+    
+    return mod_book
+
+
 def save_book(path, book_edited, book, conf):
     """Save the edited book into the book file and the old one to history."""
     
@@ -321,7 +558,6 @@ def save_book(path, book_edited, book, conf):
     # write the current version to the book file
     with open(path + "book", "w") as file:
         json.dump(book_edited, file)
-    
 
 
 def save_to_history(path, book, conf):
@@ -453,12 +689,21 @@ def main():
     # act according to chosen operation
     elif act == "ls":
         ls(args, book, conf)
-        exit()
     elif act == "addcat":
         book_edited = addcat(args, book, conf)
-        save_book(path, book_edited, book, conf)
     elif act == "add":
         book_edited = add(args, book, conf)
+    elif act == "rmcat":
+        book_edited = rmcat(args, book, conf)
+    elif act == "rm":
+        book_edited = rm(args, book, conf)
+    elif act == "editcat":
+        book_edited = editcat(args, book, conf)
+    elif act == "edit":
+        book_edited = edit(args, book, conf)
+    
+    # save edited book and add a tome to history
+    if act in ["addcat", "add", "rmcat", "rm", "editcat", "edit"]:
         save_book(path, book_edited, book, conf)
 
 
