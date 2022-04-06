@@ -12,14 +12,13 @@ import time
 
 #TODO:
 # export to HTML
-# colors
-# normalize output and prompt messages
 # add help page
 # modifiable settings
 
 # unimportant additions:
 # completely useable with arguments, no prompts needed
-# normalize function descriptions
+# review function descriptions
+# review output messages
 
 def create_data_dir(dotfile_path, dot_config_path, home):
     """Create the directory for storing the application's files"""
