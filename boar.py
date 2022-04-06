@@ -69,7 +69,8 @@ def create_defaults(path_loc, create_book=False, create_conf=False, create_histo
         "history length": 5,
         "disable colors": False,
         "show links": True,
-        "clear": "cl"
+        "clear": "cl",
+        "export light by default": True
     }
 
     # create the book file for storing the data in the book
@@ -610,6 +611,81 @@ def undo(path, times=1):
         os.rename(path + "history/tome" + str(tome_num), path + "history/tome" + str(tome_num - times)) 
 
 
+def export(path, args, book, conf):
+    """Create an HTML file of the book"""
+    
+    text_color = "#000"
+    bold_color = "#000"
+    bold1, bold2 = "<b>", "</b>"
+    bg_color = "#FFF"
+    if args == "dark" or not args and not conf["export light by default"]:
+        text_color = "#AAA"
+        bold_color = "#EEE"
+        bold1, bold2 = "", ""
+        bg_color = "#111"
+
+    
+    # create the chapters part
+    chapters = []
+    for cat in book:
+        chapters.append(f"<li style='line-height: 23px;'>{bold1}<a href='#{cat['short']}'>{cat['name']}</a>{bold2}</li>")
+    chapters_joined = "\n".join(chapters)
+    
+    # create the categories
+    categories = []
+    for cat in book:
+        categ = [f"<h3 id='{cat['short']}'>{bold1}{cat['name']}{bold2}</h3>", "<ul>"]
+        for item in cat["items"]:
+            # set link if it's present
+            if item["link"]:
+                link1 = f"<a href='{item['link']}'>"
+                link2 = "</a>"
+            else:
+                link1, link2 = "<span>", "</span>"
+            # set desc if present, else ...
+            desc = item["desc"] if item["desc"] else "..."
+            categ.append(f"<li>{bold1}{link1}{item['name']}{link2}{bold2} : {desc}</li>")
+        categ.append("</ul>")
+        categories.append("\n".join(categ))
+    categories_joined = "\n".join(categories)
+    
+    base = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BOAR</title>
+    <style type="text/css">
+        body {{ margin-left: 20%; margin-top: 70px; margin-right: 20%, margin-bottom: 70px; font-family: sans-serif; color: {text_color}; background-color: {bg_color};}}
+        a:link {{ color: {bold_color}; text-decoration: none }}
+        a:visited {{ color: {bold_color}; text-decoration: none }}
+        a:hover {{ color: {bold_color}; text-decoration: underline }}
+        a:active {{ color: #099; text-decoration: underline }}
+        ul {{ margin-bottom: 40px }}
+        li {{ line-height: 27px }}
+        span {{ color: {bold_color}; }}
+        h3 {{ color: {bold_color}; }}
+        h1 {{ color: {bold_color}; }}
+    </style>
+</head>
+<body>
+
+    <h1>BOAR - Book Of All References</h1>
+    Chapters:
+    <ul>
+        {chapters_joined}
+    </ul>
+
+    {categories_joined}
+
+</body>
+</html>
+"""
+    with open(path + "boar.html", "w") as file:
+        file.write(base)
+        print("Exported HTML to " + path + "boar.html")
+
+
 def color(text, conf, color, style="regular"):
     """Add ANSI color codes to change the text color and style, at the end reset color"""
     colors = {
@@ -686,7 +762,7 @@ def main():
         exit()
     elif act == "reset":
         # restore defaults
-        if prompt("This will overwrite the book and the config. Proceed?", default="y"): #TODO: set deafult to no
+        if prompt("This will overwrite the book and the config. Proceed?", default="y"):
             create_defaults(path, True, True, True)
         exit()
     
@@ -712,6 +788,8 @@ def main():
         if nocolor:
             conf["disable colors"] = True
     
+    book_edited = None
+    
     if act == "test":
         for i in["black", "red", "green", "yellow", "blue", "purple", "cyan", "white"]:
             for j in ["regular", "bold", "ul", "bg", "hi", "hibold", "hibg"]:
@@ -733,9 +811,11 @@ def main():
         book_edited = editcat(args, book, conf)
     elif act == "edit":
         book_edited = edit(args, book, conf)
+    elif act == "export":
+        export(path, args, book, conf)
     
     # save edited book and add a tome to history
-    if act in ["addcat", "add", "rmcat", "rm", "editcat", "edit"]:
+    if book_edited:
         save_book(path, book_edited, book, conf)
 
 
