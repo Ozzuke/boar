@@ -182,12 +182,12 @@ def ls(args, book, conf):
     for id1, cat in enumerate(book, 1):
         if not args or args in [str(id1), cat["short"]]:
             # write the category ID
-            print(str(id1) + " " * (longest_id - len(str(id1))), end=" ")
+            print(color(str(id1), conf, "white", "ul") + color(" ", conf, "white", "ul") * (longest_id - len(str(id1))), end=color(" ", conf, "white", "ul"))
             # write the category name
-            print(cat["name"], end="  ")
+            print(color(cat["name"] + " ", conf, "white", "ul"), end=" ")
             # write the short version of the category name if present
             if cat["short"]:
-                print(f"({cat['short']})")
+                print(f"({color(cat['short'], conf, 'cyan')})")
             else:
                 # add newline
                 print()
@@ -200,7 +200,7 @@ def ls(args, book, conf):
                 print(item["name"], end=" ")
                 # indicate the presence of a link if exists
                 if item["link"]:
-                    print("[L]", end=" ")
+                    print(color("[L]", conf, "black", "bold"), end=" ")
                 # add ':' before description
                 print(":", end=" ")
                 # write the description if it exists
@@ -208,7 +208,7 @@ def ls(args, book, conf):
                 
                 # if link is present, write it in a new line
                 if item["link"] and conf["show links"]:
-                    print(" " * (longest_id + 5), "link:", item["link"])
+                    print(" " * (longest_id + 5), "link:", color(item["link"], conf, "black", "bold"))
         
         # add newline between categories
         if id1 != len(book) and not args:
@@ -434,7 +434,7 @@ def editcat(args, book, conf):
             if new_cat_n.lower() in [x["name"].lower() for x in book]:
                 exit("Category with the same name already exists.")
             
-            changed.append(f"{cat['name']} -> {new_cat_n}")
+            changed.append(f"{color(cat['name'], conf, 'red')} -> {color(new_cat_n, conf, 'green')}")
             cat["name"] = new_cat_n
         
         new_short_n = input("New short name for category (blank to leave unchanged): ")
@@ -446,13 +446,13 @@ def editcat(args, book, conf):
             elif new_short_n in [x["short"] for x in book]:
                 print("Category with same short name already exists.")
             else:
-                changed.append(f"{cat['short']} -> {new_short_n}")
+                changed.append(f"{color(cat['short'], conf, 'red')} -> {color(new_short_n, conf, 'green')}")
                 cat["short"] = new_short_n
 
         mod_book.append(cat)
         
     if not changed:
-        print("No changes made")
+        print(color("No changes made", conf, "yellow"))
         exit()
     print("Changes:\n" + "\n".join(changed))
         
@@ -510,29 +510,29 @@ def edit(args, book, conf):
             new_item_n = input("New name for item (blank to leave unchanged): ")
             if new_item_n:
                 if new_item_n.lower() in [x["name"].lower() for x in cat["items"]]:
-                    exit("Category with the same name already exists.")
-                changed.append(f"{item['name']} -> {new_item_n}")
+                    exit("Item with the same name already exists.")
+                changed.append(f"{color(item['name'], conf, 'red')} -> {color(new_item_n, conf, 'green')}")
                 item["name"] = new_item_n
             
             # change item description
             new_item_desc = input(f"New description for item (blank to leave unchanged, '{conf['clear']}' to clear): ")
             first_part = item["desc"] if item["desc"] and len(item["desc"]) < 20 else item["desc"] if not item["desc"] else item["desc"][:20] + "..."
             if new_item_desc.lower() == conf["clear"].lower():
-                changed.append(f"{first_part} -> None")
+                changed.append(f"{color(first_part, conf, 'red')} -> {color('None', conf, 'green')}")
                 item["desc"] = None
             elif new_item_desc:
                 sec_part = new_item_desc if len(new_item_desc) < 20 else new_item_desc[:20] + "..."
-                changed.append(f"{first_part} -> {sec_part}")
+                changed.append(f"{color(first_part, conf, 'red')} -> {color(sec_part, conf, 'green')}")
                 item["desc"] = new_item_desc
             
             new_item_link = input(f"New link for item (blank to leave unchanged, '{conf['clear']}' to clear): ")
             first_part = item["link"] if item["link"] and len(item["link"]) < 20 else item["link"] if not item["link"] else item["link"][:20] + "..."
             if new_item_link.lower() == conf["clear"].lower():
-                changed.append(f"{first_part} -> None")
+                changed.append(f"{color(first_part, conf, 'red')} -> {color('None', conf, 'green')}")
                 item["link"] = None
             elif new_item_link:
                 sec_part = new_item_link if len(new_item_link) < 20 else new_item_link[:20] + "..."
-                changed.append(f"{first_part} -> {sec_part}")
+                changed.append(f"{color(first_part, conf, 'red')} -> {color(sec_part, conf, 'green')}")
                 item["link"] = new_item_link
             
             mod_items.append(item)
@@ -542,7 +542,7 @@ def edit(args, book, conf):
         mod_book.append(cat)
     
     if not changed:
-        print("No changes made")
+        print(color("No changes made", conf, "yellow"))
         exit()
     print("Changes:\n" + "\n".join(changed))
     
@@ -611,12 +611,41 @@ def undo(path, times=1):
         os.rename(path + "history/tome" + str(tome_num), path + "history/tome" + str(tome_num - times)) 
 
 
+def color(text, conf, color, style="regular"):
+    """Add ANSI color codes to change the text color and style, at the end reset color"""
+    colors = {
+        "black": 0,
+        "red": 1,
+        "green": 2,
+        "yellow": 3,
+        "blue": 4,
+        "purple": 5,
+        "cyan": 6,
+        "white": 7
+    }
+    styles = {
+        "regular": "0;3",
+        "bold": "1;3",
+        "ul": "4;3",  # underline
+        "bg": "4",  # background
+        "hi": "0;9",  # high intensity i.e. bright
+        "hibold": "1;9",  # high intensity bold
+        "hibg": "0;10"  # high intensity background
+    }
+    if conf["disable colors"]:
+        return text
+    return f"\033[{styles[style]}{colors[color]}m{text}\033[0m"  # \033[m at the end resets color and style
+
+
 def main():
     
     # create partser to parse arguments passed from the command line
     parser = argparse.ArgumentParser(description="Add, edit and view a list of short references.")
     parser.add_argument("foo", nargs="*")  # argument to gather all input from the command line into a list
+    parser.add_argument("-c", "--nocolor", action="store_true")
     args = parser.parse_args().foo  # a list of all non-positional input
+    nocolor = parser.parse_args().nocolor
+    conf = {"disable colors": nocolor}
     
     # check if passed argument for action is a valid one and store it
     if not args:
@@ -681,10 +710,14 @@ def main():
             if prompt("Overwrite the file 'conf' with defaults?"):
                 create_defaults(path, create_conf=True)
             conf = json.load(conf_file)
+        if nocolor:
+            conf["disable colors"] = True
     
     if act == "test":
-        save_to_history(path, book, conf)
-        exit("Looks good so far")
+        for i in["black", "red", "green", "yellow", "blue", "purple", "cyan", "white"]:
+            for j in ["regular", "bold", "ul", "bg", "hi", "hibold", "hibg"]:
+                print(color("test", conf, i, j), end="")
+            print()
     
     # act according to chosen operation
     elif act == "ls":
