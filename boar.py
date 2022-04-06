@@ -3,25 +3,13 @@
 # A program to view, add, edit and export short references for later use (CLI apps, commands, websites, books etc)
 # Author Osvald Nigola
 
-
 import argparse  # module for parsing arguments passed from the command line
 import os
 import json
-import time
 
-
-#TODO:
-# export to HTML
-# add help page
-# modifiable settings
-
-# unimportant additions:
-# completely useable with arguments, no prompts needed
-# review function descriptions
-# review output messages
 
 def create_data_dir(dotfile_path, dot_config_path, home):
-    """Create the directory for storing the application's files"""
+    """Create the directory for storing data"""
     
     # prompt to create the directory
     prompt("It seems no data directory has been set up yet. Proceed?")
@@ -37,12 +25,11 @@ def create_data_dir(dotfile_path, dot_config_path, home):
             os.mkdir(dot_config_path)
             print("Created directory at", dot_config_path)
         except FileNotFoundError:
-            print(f"The directory '{home}/.config/' was not found.")
-            exit()
+            exit(f"The directory '{home}/.config/' was not found.")
 
 
 def create_defaults(path_loc, create_book=False, create_conf=False, create_history_dir=False):
-    """Create the contents to the data folder"""
+    """Create necessary files in data directory"""
     
     # the main data structure for keeping the references
     book = [
@@ -144,14 +131,11 @@ def prompt(message, default="y", positive=True, negative=True, custom=False, add
             if exit_on_false:
                 exit()
             return False
-        
-        time.sleep(0.5)
     
     # if no valid answer has been given so far
     if invalid_as_false and not exit_on_false:
         return False
-    print("Unable to understand")
-    exit()
+    exit("Unable to understand.")
         
 
 def ls(args, book, conf):
@@ -207,7 +191,7 @@ def ls(args, book, conf):
                 print(item["desc"] if item["desc"] else "...")
                 
                 # if link is present, write it in a new line
-                if item["link"] and conf["show links"]:
+                if item["link"] and (conf["show links"] or args):
                     print(" " * (longest_id + 5), "link:", color(item["link"], conf, "black", "bold"))
         
         # add newline between categories
@@ -216,7 +200,7 @@ def ls(args, book, conf):
             
     
 def addcat(args, book, conf):
-    """Adds a category to the book, returns modified book"""
+    """Add a category to the book, returns a modified book (list)"""
     
     book = book.copy()
     
@@ -265,7 +249,7 @@ def addcat(args, book, conf):
 
 
 def add(args, book, conf):
-    """Adds an entry to specified category, returns modified book"""
+    """Add an entry to a category, returns a modified book (list)"""
     
     book = book.copy()
     
@@ -302,7 +286,7 @@ def add(args, book, conf):
         
         # check if item of the same name does not happen to already be present
         if name.lower() in [x["name"].lower() for x in cat["items"]]:
-            exit("Item of the same name already exists in category. You may want to modify it instead.")
+            exit("Item of the same name already exists in category. You may wish to modify it instead.")
         
         # ask for a description of the item
         desc = input("Item description (or leave blank): ")
@@ -324,7 +308,7 @@ def add(args, book, conf):
         
 
 def rmcat(args, book, conf):
-    """Removes specified category, returns modified book"""
+    """Remove a category, returns a modified book (list)"""
 
     if args:
         cat_n = args
@@ -350,7 +334,7 @@ def rmcat(args, book, conf):
 
 
 def rm(args, book, conf):
-    """Removes specified entry from specified category, returns modified book"""
+    """Remove an entry from a category, returns a modified book (list)"""
     
     if args:
         if "." in args:
@@ -363,7 +347,6 @@ def rm(args, book, conf):
         cat_n = input("Category to remove from (short) or ID: ")
         item_n = ''
     
-    #TODO: move category check to a function
     if not cat_n:
         exit("No category name provided.")
     if cat_n not in [str(x) for x in range(1, len(book) + 1)] + [x["short"] for x in book]:
@@ -405,7 +388,7 @@ def rm(args, book, conf):
 
 
 def editcat(args, book, conf):
-    """Edits specified category, returns modified book"""
+    """Edit a category, returns a modified book (list)"""
     
     if args:
         cat_n = args
@@ -460,7 +443,7 @@ def editcat(args, book, conf):
 
 
 def edit(args, book, conf):
-    """Edits specified entry from specified categoroy, returns modified book"""
+    """Edit an entry from a categoroy, returns a modified book (list)"""
     
     if args:
         if "." in args:
@@ -473,7 +456,6 @@ def edit(args, book, conf):
         cat_n = input("Category of entry to edit (short) or ID: ")
         item_n = ''
     
-    #TODO: move category check to a function
     if not cat_n:
         exit("No category name provided.")
     if cat_n not in [str(x) for x in range(1, len(book) + 1)] + [x["short"] for x in book]:
@@ -550,7 +532,7 @@ def edit(args, book, conf):
 
 
 def save_book(path, book_edited, book, conf):
-    """Save the edited book into the book file and the old one to history."""
+    """Save the edited book into the book file and the old one to history as a 'tome'."""
     
     # save the old version to history
     save_to_history(path, book, conf)
@@ -561,7 +543,7 @@ def save_book(path, book_edited, book, conf):
 
 
 def save_to_history(path, book, conf):
-    """Save the given book to a new entry in history (a tome) and overwrite old versions as specified in conf. tome1 is the latest tome, tome2 second oldest etc."""
+    """Save the given book to a new entry in history as a 'tome' and overwrite old versions as specified in conf. tome1 is the latest tome, tome2 second oldest etc."""
     
     # increment the number of all tomes
     all_files = os.listdir(path + "history")
@@ -614,16 +596,16 @@ def undo(path, times=1):
 def export(path, args, book, conf):
     """Create an HTML file of the book"""
     
+    # set color scheme for exporting
     text_color = "#000"
     bold_color = "#000"
     bold1, bold2 = "<b>", "</b>"
     bg_color = "#FFF"
-    if args == "dark" or not args and not conf["export light by default"]:
+    if args == "dark" or args != "light" and not conf["export light by default"]:
         text_color = "#AAA"
         bold_color = "#EEE"
         bold1, bold2 = "", ""
         bg_color = "#111"
-
     
     # create the chapters part
     chapters = []
@@ -641,14 +623,15 @@ def export(path, args, book, conf):
                 link1 = f"<a href='{item['link']}'>"
                 link2 = "</a>"
             else:
-                link1, link2 = "<span>", "</span>"
-            # set desc if present, else ...
+                link1, link2 = "<span>", "</span>"  # span tags for correct text color
+            # set desc if present
             desc = item["desc"] if item["desc"] else "..."
             categ.append(f"<li>{bold1}{link1}{item['name']}{link2}{bold2} : {desc}</li>")
         categ.append("</ul>")
         categories.append("\n".join(categ))
     categories_joined = "\n".join(categories)
     
+    # build the HTML
     base = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -681,13 +664,15 @@ def export(path, args, book, conf):
 </body>
 </html>
 """
+    
+    # write the HTML to file
     with open(path + "boar.html", "w") as file:
         file.write(base)
         print("Exported HTML to " + path + "boar.html")
 
 
 def color(text, conf, color, style="regular"):
-    """Add ANSI color codes to change the text color and style, at the end reset color"""
+    """Add ANSI color codes to change the text color and style if configured so, at the end reset color"""
     colors = {
         "black": 0,
         "red": 1,
@@ -712,20 +697,82 @@ def color(text, conf, color, style="regular"):
     return f"\033[{styles[style]}{colors[color]}m{text}\033[0m"  # \033[m at the end resets color and style
 
 
+def configure(path, args, conf):
+    """Configure options"""
+    
+    mod_conf = conf.copy()
+    
+    # display options with their current values and ask for option to change
+    opt = input(f"""Which option to configure?
+1: history length (currently {conf['history length']})   {color('- amount of previous versions stored for undo', conf, "black", "bold")}
+2: disable colors (currently {conf['disable colors']})   {color('- disable colors and styling of output', conf, "black", "bold")}
+3: show links (currently {conf['show links']})   {color('- whether or not to print out item links when showing full book (links always shown when showing a single category)', conf, "black", "bold")}
+4: clear (currently {conf['clear']})   {color('- string that is used to clear a value when editing an item, as an empty string indicates leaving value unchanged', conf, "black", "bold")}
+5: export light by default (currently {conf['export light by default']})   {color('- default color scheme when exporting (can be overridden with `light` or `dark` argument)', conf, "black", "bold")}
+Option number (leave blank to abort): """)
+    
+    # if option specified, ask for new value to be set
+    if opt == "1":
+        inp = input("Set history length: ")
+        if inp.isnumeric():
+            mod_conf["history length"] = int(inp)
+        else:
+            exit("Value must be a positive integer")
+    elif opt == "2":
+        inp = input("Set whether to disable colors (true/false): ").lower()
+        if inp == "true":
+            mod_conf["disable colors"] = True
+        elif inp == "false":
+            mod_conf["disable colors"] = False
+        else:
+            exit("Value must be one of 'true', 'false'")
+    elif opt == "3":
+        inp = input("Set show links (true/false): ").lower()
+        if inp == "true":
+            mod_conf["show links"] = True
+        elif inp == "false":
+            mod_conf["show links"] = False
+        else:
+            exit("Value must be one of 'true', 'false'")
+    elif opt == "4":
+        inp = input("Set string to clear: ").lower()
+        if not inp:
+            exit("String can't be empty")
+        mod_conf["clear"] = inp
+    elif opt == "5":
+        inp = input("Set whether to export as light by default (true/false): ").lower()
+        if inp == "true":
+            mod_conf["export light by default"] = True
+        elif inp == "false":
+            mod_conf["export light by default"] = False
+        else:
+            exit("Value must be one of 'true', 'false'")
+    elif not opt:
+        exit()
+    else:
+        exit("Invalid option")
+    
+    # write new conf to file
+    with open(path + "conf", "w") as file:
+        json.dump(mod_conf, file)
+
+
+
 def main():
+    """Main function to run the app"""
     
     # create partser to parse arguments passed from the command line
     parser = argparse.ArgumentParser(description="Add, edit and view a list of short references.")
-    parser.add_argument("foo", nargs="*")  # argument to gather all input from the command line into a list
-    parser.add_argument("-c", "--nocolor", action="store_true")
-    args = parser.parse_args().foo  # a list of all non-positional input
+    parser.add_argument("arguments", nargs="*", help="can be any of 'ls', 'add', 'addcat', 'rm', 'rmcat', 'edit', 'editcat', 'undo', 'export', 'configure', 'reset'")  # argument to gather all input from the command line into a list
+    parser.add_argument("-c", "--nocolor", action="store_true", help="disable colors and styling of output")
+    args = parser.parse_args().arguments  # a list of all non-positional input
     nocolor = parser.parse_args().nocolor
     conf = {"disable colors": nocolor}
     
     # check if passed argument for action is a valid one and store it
     if not args:
         act = "ls"
-    elif args[0] in ["add", "addcat", "ls", "rm", "rmcat", "edit", "editcat", "reset", "undo", "export", "test"]:
+    elif args[0] in ["add", "addcat", "ls", "rm", "rmcat", "edit", "editcat", "reset", "undo", "export", "configure"]:
         act = args.pop(0)
     else:
         exit("Invalid operation.")
@@ -788,16 +835,11 @@ def main():
         if nocolor:
             conf["disable colors"] = True
     
+    # create a variable to later check if the book has been edited
     book_edited = None
     
-    if act == "test":
-        for i in["black", "red", "green", "yellow", "blue", "purple", "cyan", "white"]:
-            for j in ["regular", "bold", "ul", "bg", "hi", "hibold", "hibg"]:
-                print(color("test", conf, i, j), end="")
-            print()
-    
     # act according to chosen operation
-    elif act == "ls":
+    if act == "ls":
         ls(args, book, conf)
     elif act == "addcat":
         book_edited = addcat(args, book, conf)
@@ -813,9 +855,11 @@ def main():
         book_edited = edit(args, book, conf)
     elif act == "export":
         export(path, args, book, conf)
+    elif act == "configure":
+        configure(path, args, conf)
     
     # save edited book and add a tome to history
-    if book_edited:
+    if book_edited is not None:
         save_book(path, book_edited, book, conf)
 
 
