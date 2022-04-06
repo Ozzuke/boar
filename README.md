@@ -1,7 +1,7 @@
 # boar
 `boar` (Book Of All References) is a program for storing links, program names etc. They can be added into different categories and can optionally have a description.
 ## Usage
-- Program has to be in a directory that's in the $PATH environment variable and named `boar` to be used as is, otherwise instead of `boar` `./boar.py` (if in the same directory) has to be used.
+- Program has to be in a directory that's in the $PATH environment variable and named `boar` to be used as is, otherwise instead of `boar` `./boar.py` (if in the same directory) has to be used. It must also be executable by the user.
 - When ran for the first time, it asks to create a directory at either ~/.boar or ~/.config/boar and creates a few files there. The book, by default contains a template entry and two template items.
 - `boar ls [category]` – view either all categories and items within them or just a specific category if it's ID (it's position, starting from 1) or short name is passed. Items with a link have `[L]` printed after their name and if configured so, will have the link shown on the line under them. When viewing only a specific category, item links are always shown. Calling `boar` without any arguments is interpreted as `boar ls`.
 - `boar add [category] [item name]` – add an item to a category. Category ID or short name and the name for the item can be passed from the comman line, otherwise they are asked for with a prompt. The program will then prompt for a description and a link to be entered for the item, both of which can be omitted. Absolute links should include the `https://` part if using links in the exported HTML page is desired.
