@@ -54,6 +54,8 @@ def create_defaults(path_loc, create_book=False, create_conf=False, create_histo
     # configuration
     conf = {
         "history length": 5,
+        "max display": 15,
+        "show all": "all",
         "disable colors": False,
         "show links": True,
         "clear": "cl",
@@ -145,7 +147,7 @@ def ls(args, book, conf):
     2   Template Category  (temp)
     2.1  - Template entry [L] : a good description about the entry
              link: https://example.com
-    2.2  - A second entry :"""
+    2.2  - A second entry : ..."""
     
     book = book.copy()
     
@@ -155,14 +157,23 @@ def ls(args, book, conf):
         exit()
     
     # if asked for a non-existent category, say as much and exit
-    if args and args not in [x["short"] for x in book] + [str(x) for x in range(1, len(book) + 1)]:
+    if args and args not in [x["short"] for x in book] + [str(x) for x in range(1, len(book) + 1)] + [conf['show all']]:
         print("Category doesn't exist.")
         exit()
     
     # find the amount of characters the longest ID takes to display
     longest_id = len(str(len(book))) + 1 + len(str(max([len(x["items"]) for x in book])))
+
+    # if the total amount of items is higher than configured, show lscat instead, unless 'all' is given
+    if sum([len(x["items"]) + 1 for x in book]) > conf["max display"] and not args:
+        lscat(book, conf)
+        exit()
     
-    print("BOAR – Book Of All References")
+    # if show all is given, set args as none
+    if args.lower() == conf["show all"]:
+        args = None
+    
+    print("BOAR - Book Of All References")
     for id1, cat in enumerate(book, 1):
         if not args or args in [str(id1), cat["short"]]:
             # write the category ID
@@ -198,6 +209,29 @@ def ls(args, book, conf):
         if id1 != len(book) and not args:
             print()
             
+
+def lscat(book, conf):
+    """Show all categories with their short names"""
+    
+    # if book is empty, say as much and exit
+    if not book:
+        print("Nothing to show")
+        exit()
+    
+    # find the amount of characters the longest ID takes to display
+    longest_id = len(str(len(book))) + 1
+
+    # show the name and each category
+    print("BOAR - Book Of All References")
+    for id, cat in enumerate(book, 1):
+        # write the category ID
+        print(color(str(id), conf, "white", "ul") + color(" ", conf, "white", "ul") * (longest_id - len(str(id))), end=color(" ", conf, "white", "ul"))
+        # write the category name
+        print(color(cat["name"] + " ", conf, "white", "ul"), end=" ")
+        # write the short version of the category name if present, add newline (default `end` of print()s)
+        if cat["short"]:
+            print(f"({color(cat['short'], conf, 'cyan')})")
+
     
 def addcat(args, book, conf):
     """Add a category to the book, returns a modified book (list)"""
@@ -709,6 +743,8 @@ def configure(path, args, conf):
 3: show links (currently {conf['show links']})   {color('- whether or not to print out item links when showing full book (links always shown when showing a single category)', conf, "black", "bold")}
 4: clear (currently {conf['clear']})   {color('- string that is used to clear a value when editing an item, as an empty string indicates leaving value unchanged', conf, "black", "bold")}
 5: export light by default (currently {conf['export light by default']})   {color('- default color scheme when exporting (can be overridden with `light` or `dark` argument)', conf, "black", "bold")}
+6: max display (currently {conf['max display']})   {color('- maximum number of items to display when showing full book before defaulting to lscat', conf, "black", "bold")}
+7: show all (currently {conf['show all']})   {color('- string to indicate showing all items and not defaulting to lscat with many items', conf, "black", "bold")}
 Option number (leave blank to abort): """)
     
     # if option specified, ask for new value to be set
@@ -747,6 +783,17 @@ Option number (leave blank to abort): """)
             mod_conf["export light by default"] = False
         else:
             exit("Value must be one of 'true', 'false'")
+    elif opt == "6":
+        inp = input("Set maximum number of items to display: ")
+        if inp.isnumeric():
+            mod_conf["max display"] = int(inp)
+        else:
+            exit("Value must be a positive integer")
+    elif opt == "7":
+        inp = input("Set string to show all: ").lower()
+        if not inp:
+            exit("String can't be empty")
+        mod_conf["show all"] = inp
     elif not opt:
         exit()
     else:
@@ -772,7 +819,7 @@ def main():
     # check if passed argument for action is a valid one and store it
     if not args:
         act = "ls"
-    elif args[0] in ["add", "addcat", "ls", "rm", "rmcat", "edit", "editcat", "reset", "undo", "export", "configure"]:
+    elif args[0] in ["add", "addcat", "ls", "lscat", "rm", "rmcat", "edit", "editcat", "reset", "undo", "export", "configure"]:
         act = args.pop(0)
     else:
         exit("Invalid operation.")
@@ -841,6 +888,8 @@ def main():
     # act according to chosen operation
     if act == "ls":
         ls(args, book, conf)
+    elif act == "lscat":
+        lscat(book, conf)
     elif act == "addcat":
         book_edited = addcat(args, book, conf)
     elif act == "add":
