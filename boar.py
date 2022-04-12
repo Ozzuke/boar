@@ -854,11 +854,6 @@ def main():
     if act == "undo":
         undo(path, args)
         exit()
-    elif act == "reset":
-        # restore defaults
-        if prompt("This will overwrite the book and the config. Proceed?", default="y"):
-            create_defaults(path, True, True, True)
-        exit()
     
     # load data and config from file
     with open(path + "book") as book_file, open(path + "conf") as conf_file:
@@ -906,6 +901,12 @@ def main():
         export(path, args, book, conf)
     elif act == "configure":
         configure(path, args, conf)
+    elif act == "reset":
+        # restore defaults
+        if prompt("This will overwrite the book and the config. Proceed?", default="y"):
+            save_to_history(path, book, conf)
+            create_defaults(path, True, True, True)
+        exit()
     
     # save edited book and add a tome to history
     if book_edited is not None:
