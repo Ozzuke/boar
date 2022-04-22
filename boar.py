@@ -448,7 +448,7 @@ def editcat(args, book, conf):
         if new_cat_n:
             # change category name
             
-            if new_cat_n.lower() in [x["name"].lower() for x in book]:
+            if new_cat_n.lower() in [x["name"].lower() for x in book] and new_cat_n.lower() != cat["name"].lower():
                 exit("Category with the same name already exists.")
             
             changed.append(f"{color(cat['name'], conf, 'red')} -> {color(new_cat_n, conf, 'green')}")
@@ -525,7 +525,7 @@ def edit(args, book, conf):
             # change item name
             new_item_n = input("New name for item (blank to leave unchanged): ")
             if new_item_n:
-                if new_item_n.lower() in [x["name"].lower() for x in cat["items"]]:
+                if new_item_n.lower() in [x["name"].lower() for x in cat["items"]] and new_item_n.lower() != item["name"].lower():
                     exit("Item with the same name already exists.")
                 changed.append(f"{color(item['name'], conf, 'red')} -> {color(new_item_n, conf, 'green')}")
                 item["name"] = new_item_n
