@@ -520,6 +520,7 @@ def edit(args, book, conf):
                 mod_items.append(item)
                 continue
             
+            # store old and new values to print changes later
             changed = []
             
             # change item name
@@ -527,31 +528,32 @@ def edit(args, book, conf):
             if new_item_n:
                 if new_item_n.lower() in [x["name"].lower() for x in cat["items"]] and new_item_n.lower() != item["name"].lower():
                     exit("Item with the same name already exists.")
-                changed.append(f"{color(item['name'], conf, 'red')} -> {color(new_item_n, conf, 'green')}")
+                changed.append(f"{color(item['name'], conf, 'red')} -> {color(new_item_n, conf, 'green')}")  # store change
                 item["name"] = new_item_n
             
             # change item description
             new_item_desc = input(f"New description for item (blank to leave unchanged, '{conf['clear']}' to clear): ")
-            first_part = item["desc"] if item["desc"] and len(item["desc"]) < 20 else item["desc"] if not item["desc"] else item["desc"][:20] + "..."
-            if new_item_desc.lower() == conf["clear"].lower():
-                changed.append(f"{color(first_part, conf, 'red')} -> {color('None', conf, 'green')}")
+            first_part = item["desc"] if item["desc"] and len(item["desc"]) <= 20 else item["desc"] if not item["desc"] else item["desc"][:17] + "..."  # old value for printing changes
+            if new_item_desc.lower() == conf["clear"].lower():  # clear description
+                changed.append(f"{color(first_part, conf, 'red')} -> {color('None', conf, 'green')}")  # store change
                 item["desc"] = None
-            elif new_item_desc:
-                sec_part = new_item_desc if len(new_item_desc) < 20 else new_item_desc[:20] + "..."
-                changed.append(f"{color(first_part, conf, 'red')} -> {color(sec_part, conf, 'green')}")
+            elif new_item_desc:  # change description
+                sec_part = new_item_desc if len(new_item_desc) <= 20 else new_item_desc[:17] + "..."  # new value for printing changes
+                changed.append(f"{color(first_part, conf, 'red')} -> {color(sec_part, conf, 'green')}")  # store change
                 item["desc"] = new_item_desc
             
+            # change item link
             new_item_link = input(f"New link for item (blank to leave unchanged, '{conf['clear']}' to clear): ")
-            first_part = item["link"] if item["link"] and len(item["link"]) < 20 else item["link"] if not item["link"] else item["link"][:20] + "..."
-            if new_item_link.lower() == conf["clear"].lower():
-                changed.append(f"{color(first_part, conf, 'red')} -> {color('None', conf, 'green')}")
+            first_part = item["link"] if item["link"] and len(item["link"]) <= 20 else item["link"] if not item["link"] else item["link"][:17] + "..."  # old value for printing changes
+            if new_item_link.lower() == conf["clear"].lower():  # clear link
+                changed.append(f"{color(first_part, conf, 'red')} -> {color('None', conf, 'green')}")  # store change
                 item["link"] = None
-            elif new_item_link:
-                sec_part = new_item_link if len(new_item_link) < 20 else new_item_link[:20] + "..."
-                changed.append(f"{color(first_part, conf, 'red')} -> {color(sec_part, conf, 'green')}")
+            elif new_item_link:  # change link
+                sec_part = new_item_link if len(new_item_link) <= 20 else new_item_link[:17] + "..."  # new value for printing changes
+                changed.append(f"{color(first_part, conf, 'red')} -> {color(sec_part, conf, 'green')}")  # store change
                 item["link"] = new_item_link
             
-            mod_items.append(item)
+            mod_items.append(item)  # add item in changed form to the new items list
             
         # add modified item list to category
         cat["items"] = mod_items
@@ -560,7 +562,7 @@ def edit(args, book, conf):
     if not changed:
         print(color("No changes made", conf, "yellow"))
         exit()
-    print("Changes:\n" + "\n".join(changed))
+    print("Changes:\n" + "\n".join(changed))  # print changes
     
     return mod_book
 
