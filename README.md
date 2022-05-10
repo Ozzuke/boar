@@ -1,32 +1,58 @@
 # boar
-`boar` (Book Of All References) is a program for storing items, e.g. websites for later use, applications that one might forget the name of etc. Entries can be added into different categories and can optionally have a description and a link. Links are shown under the name of the item (can be configured to hide it) when viewing from the command line, and as hyperlinks of the item name when viewing the exported HTML file in a web browser.
+`boar` (Book Of All References) is a program for storing items like useful websites, applications with a forgettable name, cool programs to check out later, movies to watch etc. into different categories; items can optionally have a description and a link. Links are normally shown under the name of the item when viewing from the command line, and as hyperlinks of the item name when viewing the exported HTML file in a web browser.
+
+
 ## Installation
-The boar.py file contains everything needed to run the program, so it can be run directly or be placed in a directory that's in the $PATH environment variable. The following steps will install boar in $PATH as `boar`:
-Clone the repository to your local machine using `git clone https://github.com/ozzuke/boar.git`. This should create a directory called `boar` in your current working directory.
+The boar.py file contains everything needed to run the program, so it can be run directly or be placed in a directory that's in the `$PATH` environment variable. The following steps will install boar in `$PATH` as `boar`:
+
+*NB! In the installation chapter, `%` in front of a section of code indicates that it is a command to run in the terminal, without the `%` sign. Your shell may have `$` or some other symbol instead.*
+
+Open your terminal alone the repository to your local machine using `% git clone https://github.com/ozzuke/boar.git`. This should create a directory called `boar` in your current working directory.<br>
 There are two ways to install the program: locally (for one user, doesn't require administrative privileges) and globally (for all users, requires administrative privileges).
+
+
 ### Local installation
-Create the directory `~/.local/bin` if it doesn't exist already by running `mkdir -p $HOME/.local/bin`.
-Check if the directory is in the $PATH environment variable by running `[[ $PATH =~ "$HOME/.local/bin" ]] && echo "Found" || echo "Not found"`.
-If the path was not found, it needs to be added:
-- If you are using bash (`echo $SHELL` returns `/bin/bash` or similar), you can add it to the $PATH environment variable by running `echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc`.
-- If you are using zsh (`echo $SHELL` returns `/bin/zsh` or similar), you can add it to the $PATH environment variable by running `echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.zshrc`.
-- If you are using fish (`echo $SHELL` returns `/bin/fish` or similar), you can add it to the $PATH environment variable by running `echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.config/fish/config.fish`.
-Reopen your terminal and check if the path is now in the $PATH environment variable by running `[[ $PATH =~ "$HOME/.local/bin" ]] && echo "Found" || echo "Not found"` again and you should now see `Found`.
-Once the path is in the $PATH environment variable, you can copy or symlink the boar.py file to the directory `~/.local/bin`. Copying allows the cloned git repository to be deleted but requires the file to be copied again every time the program is updated. If symlinking, the cloned repository can not be deleted, but updating the program requires no extra steps and the update is reflected immediately.
+Create the directory `~/.local/bin` if it doesn't exist already by running `% mkdir -p $HOME/.local/bin`.<br>
+Check if the directory is in the $PATH environment variable by running<br> `% [[ $PATH =~ "$HOME/.local/bin" ]] && echo "Found" || echo "Not found"`.
+
+If the path was not found in `$PATH`, it needs to be added in your shell config, which is run every time you open your shell:
+- If you are using bash (`% echo $SHELL` returns `/bin/bash` or similar), you can add it to the `$PATH` environment variable by running<br>
+`% echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.bashrc`.
+- If you are using zsh (`% echo $SHELL` returns `/bin/zsh` or similar), you can add it to the `$PATH` environment variable by running<br>
+`% echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.zshrc`.
+- If you are using fish (`% echo $SHELL` returns `/bin/fish` or similar), you can add it to the `$PATH` environment variable by running<br>
+`% echo 'export PATH="$HOME/.local/bin:$PATH"' >> $HOME/.config/fish/config.fish`.
+- If you are using something else, you probably already know what to do.
+- Reopen your terminal and confirm that the path is now in the `$PATH` environment variable by running<br>
+`% [[ $PATH =~ "$HOME/.local/bin" ]] && echo "Found" || echo "Not found"`.
+
+Once the path is in the `$PATH` environment variable, you can copy or symlink the boar.py file to the directory `~/.local/bin`. Copying allows the cloned git repository to be deleted but requires the file to be copied again every time the program is updated. If symlinking, the cloned repository can not be deleted, but updating the program requires no extra steps and the update is reflected immediately.<br>
 If you cloned the repository to your home directory, the file is going to be located at `~/boar/boar.py`. In this case:
-- copy: `cp ~/boar/boar.py ~/.local/bin/boar`
-- symlink: `ln -s ~/boar/boar.py ~/.local/bin/boar`
-Now you can run the program by typing `boar`.
+- copy: `% cp ~/boar/boar.py ~/.local/bin/boar`
+- symlink: `% ln -s ~/boar/boar.py ~/.local/bin/boar`
+
+You should now be able to run the program by typing `% boar`.
+
+
 ### Global installation
-First check that you have administrative privileges by running `sudo -v` (you should see a message asking for your password). If nothing appears, you are good to go.
-Make sure the directory `/usr/local/bin` exists by running `[[ -d "/usr/local/bin" ]] && echo "Found" || echo "Not found"`. If it doesn't exist:
-- create it by running `sudo mkdir -p /usr/local/bin` and reopen the terminal
-- check if the directory is now in the $PATH environment variable by running `[[ $PATH =~ "/usr/local/bin" ]] && echo "Found" || echo "Not found"`.
+First check that you have administrative privileges by running `% sudo -v` (you should see a message asking for your password). If nothing appears after entering your password correctly, you are good to go. Otherwise you likely don't have administrative privileges and should use the local installation option instead.
+
+Make sure the directory `/usr/local/bin` exists by running<br>
+`% [[ -d "/usr/local/bin" ]] && echo "Found" || echo "Not found"`.
+
+If it doesn't exist:
+- create it by running `% sudo mkdir -p /usr/local/bin` and reopen the terminal
+- confirm that the directory is now in the `$PATH` environment variable by running<br>
+`% [[ $PATH =~ "/usr/local/bin" ]] && echo "Found" || echo "Not found"`.
+
 Copy or symlink the boar.py file to the directory `/usr/.local/bin`. Copying allows the cloned git repository to be deleted but requires the file to be copied again every time the program is updated. If symlinking, the cloned repository can not be deleted, but updating the program requires no extra steps and the update is reflected immediately.
+
 If you cloned the repository to your home directory, the file is going to be located at `~/boar/boar.py`. In this case:
-- copy: `cp ~/boar/boar.py /usr/.local/bin/boar`
-- symlink: `ln -s ~/boar/boar.py /usr/.local/bin/boar`
-Now you can run the program by typing `boar`.
+- copy: `% cp ~/boar/boar.py /usr/.local/bin/boar`
+- symlink: `% ln -s ~/boar/boar.py /usr/.local/bin/boar`
+
+You should now be able to run the program by running `% boar`.
+
 
 ## Usage
 - When ran for the first time, it asks to create a directory at either ~/.boar or ~/.config/boar and creates a few files there. The book, by default contains a template entry and two template items.
