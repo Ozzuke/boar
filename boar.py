@@ -176,9 +176,9 @@ def ls(args, book, conf):
     for id1, cat in enumerate(book, 1):
         if not args or args in [str(id1), cat["short"]]:
             # write the category ID
-            print(color(str(id1), conf, "white", "ul") + color(" ", conf, "white", "ul") * (longest_id - len(str(id1))), end=color(" ", conf, "white", "ul"))
+            print(color(str(id1), conf, "purple", "ul") + color(" ", conf, "purple", "ul") * (longest_id - len(str(id1))), end=color(" ", conf, "purple", "ul"))
             # write the category name
-            print(color(cat["name"] + " ", conf, "white", "ul"), end=" ")
+            print(color(cat["name"] + " ", conf, "purple", "ul"), end=" ")
             # write the short version of the category name if present
             if cat["short"]:
                 print(f"({color(cat['short'], conf, 'cyan')})")
@@ -191,7 +191,7 @@ def ls(args, book, conf):
                 # write the item ID
                 print(str(id1) + "." + str(id2) + " " * (longest_id - len(str(id1)) - 1 - len(str(id2))), end="  - ")
                 # write the item name
-                print(item["name"], end=" ")
+                print(color(item["name"], conf, "white", "hi"), end=" ")
                 # indicate the presence of a link if exists
                 if item["link"]:
                     print(color("[L]", conf, "black", "bold"), end=" ")
