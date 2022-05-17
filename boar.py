@@ -157,8 +157,7 @@ def ls(args, book, conf):
     
     # if asked for a non-existent category, say as much and exit
     if args and args not in [x["short"] for x in book] + [str(x) for x in range(1, len(book) + 1)] + [conf['show all']]:
-        print("Category doesn't exist.")
-        exit()
+        exit("Category doesn't exist.")
     
     # find the amount of characters the longest ID takes to display
     longest_id = len(str(len(book))) + 1 + len(str(max([len(x["items"]) for x in book])))
