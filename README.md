@@ -77,17 +77,17 @@ If it wasn't found, create it
 
     [[ $PATH =~ "/usr/local/bin" ]] && echo "Found" || echo "Not found"
 
-Copy or symlink the boar.py file to the directory `/usr/.local/bin`. Copying allows the cloned git repository to be deleted but requires the file to be copied again every time the program is updated. If symlinking, the cloned repository can not be deleted, but updating the program requires no extra steps and the update is reflected immediately.
+Copy or symlink the boar.py file to the directory `/usr/local/bin`. Copying allows the cloned git repository to be deleted but requires the file to be copied again every time the program is updated. If symlinking, the cloned repository can not be deleted, but updating the program requires no extra steps and the update is reflected immediately.
 
 If you cloned the repository to your home directory, the file is going to be located at `~/boar/boar.py`.
 
 Copy:
 
-    cp ~/boar/boar.py /usr/.local/bin/boar
+    sudo cp ~/boar/boar.py /usr/local/bin/boar
 
 Symlink:
 
-    ln -s ~/boar/boar.py /usr/.local/bin/boar
+    sudo ln -s ~/boar/boar.py /usr/local/bin/boar
 
 You should now be able to run the program by running `boar`.
 
